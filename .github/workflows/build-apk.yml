@@ -1,0 +1,41 @@
+
+name: Compilar APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [principal]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar projeto
+        uses: actions/checkout@v4
+
+      - name: Extrair ZIP
+        run: unzip -o MeuLauncherTV.zip
+
+      - name: Configurar Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Instalar Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Configurar Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - name: Compilar aplicativo
+        working-directory: launcher-tv
+        run: gradle assembleDebug --no-daemon
+
+      - name: Guardar APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: MeuLauncherTV-apk
+          path: launcher-tv/app/build/outputs/apk/debug/app-debug.apk
