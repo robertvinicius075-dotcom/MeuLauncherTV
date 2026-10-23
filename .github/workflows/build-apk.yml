@@ -1,5 +1,4 @@
-
-name: Compilar APK
+name: Gerar APK Android
 
 on:
   workflow_dispatch:
@@ -9,6 +8,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Baixar projeto
         uses: actions/checkout@v4
