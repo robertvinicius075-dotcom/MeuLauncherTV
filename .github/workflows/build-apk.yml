@@ -3,8 +3,9 @@ name: Gerar APK Android
 on:
   workflow_dispatch:
   push:
-    branches: [principal]
-
+    branches:
+      - Main
+      - principal
 jobs:
   build:
     runs-on: ubuntu-latest
