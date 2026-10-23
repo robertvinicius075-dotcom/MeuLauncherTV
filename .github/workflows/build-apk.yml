@@ -1,11 +1,17 @@
+
 name: Gerar APK Android
 
 on:
   workflow_dispatch:
   push:
     branches:
-      - Main
       - principal
+      - Main
+      - main
+
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -14,8 +20,18 @@ jobs:
       - name: Baixar projeto
         uses: actions/checkout@v4
 
-      - name: Extrair ZIP
-        run: unzip -o MeuLauncherTV.zip
+      - name: Verificar ZIP
+        run: |
+          if [ ! -f "MeuLauncherTV.zip" ]; then
+            echo "ERRO: MeuLauncherTV.zip não está na raiz do repositório."
+            ls -la
+            exit 1
+          fi
+          echo "ZIP encontrado!"
+          unzip -l MeuLauncherTV.zip | head -80
+
+      - name: Extrair projeto
+        run: unzip -o MeuLauncherTV.zip -d projeto
 
       - name: Configurar Java
         uses: actions/setup-java@v4
@@ -23,20 +39,34 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Instalar Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Configurar Gradle
-        uses: gradle/actions/setup-gradle@v4
+      - name: Configurar Android SDK
+        uses: android-actions/setup-android@v4
         with:
-          gradle-version: '8.7'
+          packages: platform-tools
+
+      - name: Localizar projeto Android
+        run: |
+          echo "Procurando arquivos Gradle..."
+          find projeto -maxdepth 6 \( -name gradlew -o -name settings.gradle -o -name settings.gradle.kts \) -print
 
       - name: Compilar aplicativo
-        working-directory: launcher-tv
-        run: gradle assembleDebug --no-daemon
+        run: |
+          if [ -f "projeto/launcher-tv/gradlew" ]; then
+            cd projeto/launcher-tv
+            chmod +x gradlew
+            ./gradlew assembleDebug --no-daemon
+          elif [ -f "projeto/launcher-tv/settings.gradle" ] || [ -f "projeto/launcher-tv/settings.gradle.kts" ]; then
+            cd projeto/launcher-tv
+            gradle assembleDebug --no-daemon
+          else
+            echo "ERRO: Não encontrei o projeto Android em projeto/launcher-tv."
+            echo "Veja os arquivos listados na etapa Localizar projeto Android."
+            exit 1
+          fi
 
       - name: Guardar APK
         uses: actions/upload-artifact@v4
         with:
           name: MeuLauncherTV-apk
-          path: launcher-tv/app/build/outputs/apk/debug/app-debug.apk
+          path: projeto/launcher-tv/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
